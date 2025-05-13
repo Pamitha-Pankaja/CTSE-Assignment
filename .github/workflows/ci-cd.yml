@@ -1,0 +1,58 @@
+name: CI/CD - Deploy Microservices to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker images
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/product-service ./product-service
+          docker push ${{ secrets.DOCKER_USERNAME }}/product-service
+
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/order-service ./order-service
+          docker push ${{ secrets.DOCKER_USERNAME }}/order-service
+
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/inventory-service ./inventory-service
+          docker push ${{ secrets.DOCKER_USERNAME }}/inventory-service
+
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/api-gateway ./api-gateway
+          docker push ${{ secrets.DOCKER_USERNAME }}/api-gateway
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cd ~/microservices-app || {
+              git clone https://github.com/${{ github.repository }} microservices-app
+              cd microservices-app
+            }
+            git pull origin main
+
+            docker pull ${{ secrets.DOCKER_USERNAME }}/product-service
+            docker pull ${{ secrets.DOCKER_USERNAME }}/order-service
+            docker pull ${{ secrets.DOCKER_USERNAME }}/inventory-service
+            docker pull ${{ secrets.DOCKER_USERNAME }}/api-gateway
+
+            docker compose down
+            docker compose up -d
