@@ -17,7 +17,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: '17'
-          distribution: 'temurin'  # ✅ FIXED HERE
+          distribution: 'temurin'
 
       - name: Cache Maven packages
         uses: actions/cache@v3
@@ -63,10 +63,12 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
-            cd ~/microservices-app || {
+            sudo yum install git -y
+
+            if [ ! -d "microservices-app" ]; then
               git clone https://github.com/${{ github.repository }} microservices-app
-              cd microservices-app
-            }
+            fi
+            cd microservices-app
             git pull origin main
 
             docker pull ${{ secrets.DOCKER_USERNAME }}/product-service
@@ -74,5 +76,5 @@ jobs:
             docker pull ${{ secrets.DOCKER_USERNAME }}/inventory-service
             docker pull ${{ secrets.DOCKER_USERNAME }}/api-gateway
 
-            docker compose down
+            docker compose down || true
             docker compose up -d
