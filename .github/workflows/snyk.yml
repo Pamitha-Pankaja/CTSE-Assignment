@@ -1,0 +1,34 @@
+# .github/workflows/snyk.yml
+name: Snyk Security Scan (Spring Boot)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v3
+
+    - name: Set up Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17' # or 11, depending on your Spring Boot project
+
+    - name: Install Snyk CLI
+      run: npm install -g snyk
+
+    - name: Authenticate with Snyk (⚠️ Hardcoded token)
+      run: snyk auth 3b259db4-dbad-4738-8272-d6136ba2fcf7
+
+    - name: Run Snyk test
+      run: snyk test --file=pom.xml --severity-threshold=medium
+
+    - name: Monitor project on Snyk dashboard
+      run: snyk monitor --file=pom.xml
