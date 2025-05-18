@@ -3,6 +3,7 @@ package com.ctse.microservices.api_gateway;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+//Test class
 @SpringBootApplication
 public class ApiGatewayApplication {
 
